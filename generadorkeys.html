@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANGELVIPMX - PANEL</title>
+    <style>
+        :root{--cyan:#58e8ff;--blue:#1a73e8;--dark:#060c16;--red:#ff2450;--green:#8bff4a}
+        body{background:var(--dark);color:#fff;font-family:sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0}
+        .card{background:#0a111c;padding:25px;border-radius:24px;border:1px solid #1a2635;width:min(90%, 340px);text-align:center;box-shadow:0 15px 40px rgba(0,0,0,0.6)}
+        h2{color:var(--cyan);text-shadow:0 0 15px rgba(88,232,255,0.4);margin-bottom:20px;font-weight:900}
+        select, input{width:100%;padding:12px;margin-bottom:15px;border-radius:12px;border:1px solid #1a2635;background:#020d1b;color:#fff;text-align:center;outline:none;font-weight:bold}
+        button{width:100%;padding:14px;margin-top:5px;border:none;border-radius:12px;background:var(--blue);color:#fff;font-weight:bold;cursor:pointer;transition:0.2s}
+        button:active{transform:scale(0.95)}
+        .key-display{margin:15px 0;padding:15px;background:#021224;border:1px dashed var(--cyan);border-radius:10px;font-family:monospace;font-size:16px;color:var(--green);min-height:50px;display:flex;align-items:center;justify-content:center}
+        .btn-reset{background:transparent;border:1px solid var(--red);color:var(--red);margin-top:20px}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>ANGELVIPMX</h2>
+        
+        <label style="font-size:11px;color:#555;display:block;margin-bottom:5px">TIEMPO DE LA KEY</label>
+        <select id="days-select">
+            <option value="1">1 Día</option>
+            <option value="7">7 Días</option>
+            <option value="15">15 Días</option>
+            <option value="30">30 Días</option>
+        </select>
+
+        <button onclick="generateKey()">GENERAR NUEVA KEY</button>
+        <div id="result" class="key-display">---</div>
+        <button style="background:#131a2b; font-size:12px" onclick="copyToClipboard()">📋 COPIAR KEY</button>
+
+        <hr style="margin:25px 0; border:0; border-top:1px solid #1a2635">
+
+        <input type="text" id="reset-input" placeholder="PEGA KEY PARA RESET">
+        <button class="btn-reset" onclick="resetKey()">RESET HWID (LIMPIAR)</button>
+    </div>
+
+    <textarea id="temp-copy" style="position:absolute;left:-9999px"></textarea>
+
+    <script>
+        const DB_URL = "https://angelvipmxkeys-default-rtdb.firebaseio.com/keys/";
+
+        async function generateKey() {
+            const days = parseInt(document.getElementById('days-select').value);
+            const id = Math.random().toString(36).substring(2, 8).toUpperCase();
+            const fullKey = "ANGELVIPMX_" + id;
+            
+            const now = Date.now();
+            const expireDate = now + (days * 24 * 60 * 60 * 1000);
+            
+            try {
+                await fetch(DB_URL + fullKey + ".json", {
+                    method: 'PUT',
+                    body: JSON.stringify({ 
+                        hwid: "", 
+                        expires: expireDate,
+                        status: "active" 
+                    })
+                });
+                document.getElementById('result').innerText = fullKey;
+            } catch(e) { alert("Error al conectar con Firebase"); }
+        }
+
+        async function resetKey() {
+            const key = document.getElementById('reset-input').value;
+            if(!key.startsWith("ANGELVIPMX_")) return alert("Key no válida");
+            try {
+                await fetch(DB_URL + key + ".json", {
+                    method: 'PATCH',
+                    body: JSON.stringify({ hwid: "" })
+                });
+                alert("¡HWID Reseteado con éxito!");
+            } catch(e) { alert("Error al resetear"); }
+        }
+
+        function copyToClipboard() {
+            const text = document.getElementById('result').innerText;
+            if(text === "---") return;
+            
+            const temp = document.getElementById('temp-copy');
+            temp.value = text;
+            temp.select();
+            temp.setSelectionRange(0, 99999); // Para móviles
+
+            try {
+                document.execCommand('copy');
+                alert("Key copiada: " + text);
+            } catch (err) {
+                alert("Error al copiar, inténtalo manualmente");
+            }
+        }
+    </script>
+</body>
+</html>
